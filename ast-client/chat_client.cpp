@@ -14,7 +14,9 @@
 #include <boost/asio.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/regex.hpp>
+#include <boost/lexical_cast.hpp>
 #include <vector>
+#include <fstream>
 #include <ctype.h>
 
 using boost::asio::ip::tcp;
@@ -78,7 +80,12 @@ std::string check_file(std::string message, size_t request_length, std::shared_p
 	{
 		// format file name
 		// ../files/file1.py
+
 		std::cout << "reached receive file loop\n";
+
+		std::ofstream fout;		
+
+		fout.close();
 	}
 	else // receive regular echo message:
 	{
@@ -142,7 +149,8 @@ int main(int argc, char* argv[])
 		current_socket = std::make_shared<boost::asio::ip::tcp::socket>(io_service);
 
 		// pass command line arguments instead of hard-coding:
-		boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::address::from_string("127.0.0.1"), 5555);
+		boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::address::from_string(argv[1]),
+												boost::lexical_cast<unsigned>(argv[2]));
 		boost::system::error_code ec;
 		current_socket->connect(endpoint, ec);
 
