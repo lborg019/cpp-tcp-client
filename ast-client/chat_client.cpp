@@ -10,14 +10,16 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <cstdio>
+#include <ctype.h>
+#include <vector>
 #include <iostream>
+#include <fstream>
+#include <string>
 #include <boost/asio.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/regex.hpp>
 #include <boost/lexical_cast.hpp>
-#include <vector>
-#include <fstream>
-#include <ctype.h>
 
 using boost::asio::ip::tcp;
 
@@ -76,16 +78,69 @@ std::string check_file(std::string message, size_t request_length, std::shared_p
 
 	// receive message content:
 	rcv_buf[0] = '\0'; // clean buffer
-	if (remaining_data > 260) // big message, write to file:
+	if (remaining_data >= 260) // big message, write to file:
 	{
+		std::cout << "REMAINING_DATA: " << remaining_data << "\n";
+		std::cout << "receiving .json file\n";
+
 		// format file name
 		// ../files/file1.py
+		std::string delim_1 = "/";
+		std::string delim_2 = ".";
 
-		std::cout << "reached receive file loop\n";
+		std::string file_name = message.substr(message.rfind(delim_1) + 1);
+		file_name = file_name.substr(0, file_name.rfind(delim_2));
+		file_name = file_name.append(".json");
+		std::cout << "writing to file_name: " << file_name << "\n";
 
-		std::ofstream fout;		
+		//delete if exists so we do not append:
+		std::remove(&file_name[0]);
 
-		fout.close();
+		if (std::remove(&file_name[0]) != 0)
+			perror("Error deleting existing file. Information will append\n");
+		else
+			puts("Overwriting existing file\n");
+
+		//open binary file
+		//										    output          append            binary
+		std::ofstream outputfile(file_name, std::ios::out | std::ios::app | std::ios::binary);
+		while (remaining_data != 0)
+		{
+			//receive slab 8 byte or bigger:
+			if (remaining_data >= 8) {
+				len = s->read_some(boost::asio::buffer(rcv_buf, 8), error);
+				if (error && error != boost::asio::error::eof) {
+					std::cout << "error status: " << error.message() << std::endl;
+				}
+				else
+				{
+					//traverse the buffer, catch each byte and write to binary file:
+					for (size_t i = 0; i < 8; i++)
+					{
+						outputfile.write(&rcv_buf[i], sizeof(char));
+					}
+					remaining_data = remaining_data - len;
+					std::cout << "wrote (big): " << len << " bytes. remaining_data: " << remaining_data << "\n";
+				}
+			}
+			else //receive slab smaller than 8 bytes
+			{
+				len = s->read_some(boost::asio::buffer(rcv_buf, remaining_data), error);
+				if (error && error != boost::asio::error::eof) {
+					std::cout << "error status: " << error.message() << std::endl;
+				}
+				else
+				{
+					for (size_t i = 0; i < (size_t)remaining_data; i++)
+					{
+						outputfile.write(&rcv_buf[i], sizeof(char));
+					}
+					remaining_data = remaining_data - len;
+					std::cout << "wrote (small): " << len << " bytes. remaining_data: " << remaining_data << "\n";
+				}
+			}
+		}
+		outputfile.close();
 	}
 	else // receive regular echo message:
 	{
@@ -141,8 +196,6 @@ int main(int argc, char* argv[])
 		}
 
 		boost::asio::io_service io_service;
-		//tcp::resolver resolver(io_service);
-		//boost::asio::connect(s, resolver.resolve({ argv[1], argv[2] }));
 
 		// create a shared ptr so we can pass the socket to a function:
 		std::shared_ptr<boost::asio::ip::tcp::socket> current_socket;
