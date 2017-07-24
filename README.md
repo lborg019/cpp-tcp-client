@@ -1,12 +1,27 @@
 # cpp-tcp-client
 TCP Client in C++ that connects to Python AST server and parses .json data
 
+**Download boost Library:** http://www.boost.org/</br>
 
-### In Visual Studio:
-Install boost library: http://www.boost.org/</br>
-Compile it: http://www.boost.org/doc/libs/1_64_0/more/getting_started/windows.html
 
-### Settings:
+Download boost library and unzip files.
+Open command prompt, change to boost_1_64_0 directory:
+
+`$ cd D:/boost/boost_1_64_0` (in my case):
+
+Fire bootstrap:
+
+`$ bootstrap`
+
+## Build boost library for x64 architecture
+
+`$ ./b2 msvc architecture=x86 address-model=64 stage`
+
+`$ ./b2 msvc architecture=x86 address-model=64 install`
+
+## In Visual Studio:
+Right click on project level, left click Properties:
+
 **C/C++:**</br>
 General / Additional Include Directories: `[path]\boost\boost_1_64_0`</br>
 Precompile Headers / Precompile Header: Not Using Precompiled Headers
